@@ -1,0 +1,52 @@
+from telegram import Update
+from telegram.ext import Updater, MessageHandler, Filters, CallbackContext, CommandHandler
+import os
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+OWNER_ID = int(os.getenv("OWNER_ID"))
+
+# قائمة للكلمات المسيئة
+bad_words = ['كلمة1', 'كلمة2', 'كلمة3']  # ضع الكلمات المسيئة هنا
+
+# رسالة الترحيب عند ضغط "Start"
+def start(update: Update, context: CallbackContext):
+    welcome_message = """سبحان الله والحمد لله والله أكبر\n\nارسل رسالتك"""
+    context.bot.send_message(chat_id=update.message.chat.id, text=welcome_message)
+
+# فحص الرسالة وحظر الشخص لو فيه شتيمة
+def handle_message(update: Update, context: CallbackContext):
+    user_id = update.message.chat.id
+    username = update.message.chat.username or "NoUsername"
+    text = update.message.text
+
+    # فحص الكلمات المسيئة
+    if any(word in text for word in bad_words):
+        context.bot.send_message(chat_id=user_id, text="الرجاء الامتناع عن استخدام الشتائم. تم حظرك مؤقتًا.")
+        context.bot.kick_chat_member(update.message.chat.id, user_id)
+        return
+
+    # لو مفيش شتيمة، بيتم إرسال الرسالة لصاحب البوت
+    if user_id != OWNER_ID:
+        msg = f"رسالة من @{username} (ID: {user_id}):\\n{text}"
+        context.bot.send_message(chat_id=OWNER_ID, text=msg)
+        context.bot.send_message(chat_id=user_id, text="تم إرسال رسالتك إلى الإدارة.")
+    else:
+        try:
+            target_id, message = text.split(":", 1)
+            context.bot.send_message(chat_id=int(target_id.strip()), text=message.strip())
+        except:
+            context.bot.send_message(chat_id=OWNER_ID, text="خطأ في الصيغة. اكتب: ID:رسالتك")
+
+# إضافة command "Start"
+def main():
+    updater = Updater(BOT_TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("start", start))  # هنا بيضيف ال Start 
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))  # هنا بيضيف التعامل مع الرسائل
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
