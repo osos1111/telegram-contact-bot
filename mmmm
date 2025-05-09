@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: telegram-contact-bot
+    env: python
+    buildCommand: ""
+    startCommand: bash start.sh
+    envVars:
+      - key: BOT_TOKEN
+        value: YOUR_BOT_TOKEN_HERE
+      - key: OWNER_ID
+        value: YOUR_OWNER_ID_HERE
